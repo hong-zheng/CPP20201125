@@ -1,0 +1,294 @@
+#include "help.h"
+
+typedef struct BinaryTreeNode{
+	int _val;
+	struct BinaryTreeNode* _left;
+	struct BinaryTreeNode* _right;
+} Node;
+
+Node* creatBinaryTree(char* src, int* idx){
+	if (src[*idx] != '#'){
+		Node* root = (Node*)malloc(sizeof(Node));
+		root->_val = src[*idx];
+		++(*idx);
+		root->_left = creatBinaryTree(src, idx);
+		++(*idx);
+		root->_right = creatBinaryTree(src, idx);
+		return root;
+	}
+	else
+	{
+		return NULL;
+	}
+}
+
+// 后序遍历
+void post_traversal(Node* root){
+	stack<Node*> st;
+	Node* cur = root;
+	Node* prev = NULL;
+
+	while (cur || !st.empty()){
+		// 左子树全部入栈
+		while (cur){
+			st.push(cur);
+			cur = cur->_left;
+		}
+		// 此时左子树为空，无树入栈
+		// 获取栈顶元素，根据栈顶元素的情况，判断下一步需要进行的操作
+		cur = st.top();
+		// 如果该节点为叶子节点 或者 右子树已经访问完成就需要对该节点进行访问
+		if (cur->_right == NULL || cur->_right == prev){
+			printf("%c ", cur->_val);
+			st.pop();
+			prev = cur;
+			cur = NULL;
+		}// 否则访问右子树
+		else
+		{
+			cur = cur->_right;
+		}
+	}
+	printf("\n");
+}
+
+
+// 销毁整棵树
+void destroy_tree(Node**  root){
+	if (*root){
+		// Node* current = root;
+		destroy_tree(&(*root)->_left);
+		destroy_tree(&(*root)->_right);
+		//delete current;
+		//root = NULL;
+		delete *root;
+		*root = NULL;
+	}
+}
+void find_path(Node* root, vector<char>& curPath, vector<vector<char>>& retPath){
+	if (root== NULL){
+		retPath.push_back(curPath);
+		return;
+	}
+	curPath.push_back(root->_val);
+	find_path(root->_left, curPath, retPath);
+	find_path(root->_right, curPath, retPath);
+	curPath.pop_back();
+}
+
+int getH(Node* root){
+	if (root == NULL){
+		return 0;
+	}
+	int left = getH(root->_left);
+	int right = getH(root->_right);
+	return left > right ? left + 1 : right + 1;
+}
+
+// 寻找一个值 key 是否在树种
+Node* find_is_key(Node* root, char key){
+	if (root == NULL)
+	{
+		return NULL;
+	}
+	if (root->_val == key){
+		return root;
+	}
+	Node* ret = find_is_key(root->_left, key);
+	if (ret)
+		return ret;
+	ret = find_is_key(root->_right, key);
+	return ret;
+}
+
+// 判断一颗二叉树是否为平衡二叉树
+bool isBalanced(Node* root)
+{
+	if (root == NULL)
+	{
+		return true;
+	}
+	// 此算法中的 getH 函数，重复遍历则会影响性能
+	int left = getH(root->_left);
+	int right = getH(root->_right);
+	int diff = left - right;
+	if (diff > 1 || diff < -1)
+		return false;
+	return isBalanced(root->_left) && isBalanced(root->_right);
+}
+
+// 判断一棵树是否为平衡二叉树
+bool _isBalanced(Node* root, int* depth){
+	// 说明在当前位置上为空，没有节点，因此给对应的子树深度赋值为0
+	if (root == nullptr){
+		*depth = 0;
+		return;
+	}
+	// left : 以 root 为根的左子树高度
+	// right : 以 root 为根的右子树高度
+	int left, right;
+	if (_isBalanced(root->_left, &left) && _isBalanced(root->_right, &right))
+	{
+		// 此时说明以 root 为根的子树是平衡树，需要继续回溯
+		int diff = left - right;
+		// 当满足平衡树的条件的时，则可以求出上一层树的高度，同时return true
+		// 否则，直接return false
+
+		// return true 表示以root为根的树是平衡树
+		if (diff <= 1 && diff >= -1){
+			*depth = 1 + left > right ? left : right;
+			return true;
+		}
+	}
+	return false;
+}
+
+void test(){
+	char str[] = { "AB#D##CE#F###" };
+	int idx = 0;
+	Node* root = creatBinaryTree(str, &idx);
+	post_traversal(root);
+
+	cout << "树中所有的路径:" << endl;
+	vector<char> curPath;
+	vector<vector<char>> retPath;
+	find_path(root, curPath, retPath);
+	for (int i = 0; i < retPath.size(); ++i){
+		for (int j = 0; j < retPath[i].size(); ++j){
+			cout << retPath[i][j] << " ";
+		}
+		cout << endl;
+	}
+	
+	// 在树中找一个节点
+	Node* ret = find_is_key(root, 'E');
+	if (ret){
+		cout << "已找到 : " << ret->_val << endl;
+	}
+	else
+	{
+		cout << "没有找到 " << endl;
+	}
+	destroy_tree(&root);
+	if (root)
+	{
+		cout << "这颗树仍然存在，并没有销毁" << endl;
+	}
+	else
+	{
+		cout << "这棵树被销毁，已经不存在" << endl;
+	}
+}
+
+int main1(){
+	test();
+	system("pause");
+	return 0;
+}
+
+#if 0
+// 联合体也要考虑对齐问题
+// 共享的时候需要注意大小端问题
+union Un1{
+	char c[5];
+	int i;
+};
+
+union Un2{
+	short c[7];
+	int i;
+};
+
+int main(){
+	cout << sizeof(Un1) << endl; // 8
+	cout << sizeof(Un2) << endl; // 14+2 = 16
+	system("pause");
+	return 0;
+}
+#endif 
+
+// 配对使用
+#pragma pack(1)
+#pragma pack()
+
+#if 0
+#define off_set_of(type,member) (size_t)&(((type*)0)->member)
+
+typedef struct B{
+	char a; // 1
+	char b; // 2
+	int c; // 8
+	short d; // 10
+	double e; // 24
+} B;
+
+struct ip{
+	char _a : 1;
+	char _b : 8;
+	char _c : 2;
+};
+
+// 注意：如果位段中的类型是有符号的，位段的高位表示符号位.
+typedef struct A{
+	// unsigned int _a : 3;
+	int _a : 3;
+	int _b : 5;
+	int _c : 10;
+	int _d : 30;
+} A;
+
+// 注意：位段类型中也要考虑结构体对齐原则
+struct S{
+	// 不同类型之间不可以相互合并
+	// int 与 char 之间不可以合并
+	int e : 7;
+	char a : 3;
+	char b : 4;
+	char c : 5;
+	char d : 4;
+};
+
+int main(){
+	cout << sizeof(S) << endl;
+	A a;
+	a._a = 6;
+	a._b = 11;
+	a._c = 12;
+	a._d = 13;
+	cout << a._a << endl;
+	cout << a._b << endl;
+	cout << a._c << endl;
+	cout << a._d << endl;
+//	cout << sizeof(B) << endl;
+	//cout << sizeof(short) << endl;
+	//cout << sizeof(A) << endl;
+	system("pause");
+	return 0;
+}
+#endif
+
+#if 0 
+int main(){
+
+	typedef struct student{
+		int id;
+		short cd;
+		char name[12];
+		char gender[12];
+	} student;
+
+	cout << "sizoef(double) = "<<sizeof(double) << endl;
+	cout << "sizeof(long) = "<<sizeof(long) << endl;
+	cout << "sizeof(long long) = " << sizeof(long long) << endl;
+	student s;
+	
+	printf("%d\n", off_set_of(student, name));
+	cout << off_set_of(student, id)<<endl;
+	cout << off_set_of(student, cd) << endl;
+	cout << off_set_of(student, name) << endl;
+	cout << off_set_of(student, gender) << endl;
+	cout << endl;
+	system("pause");
+	return 0;
+}
+#endif
